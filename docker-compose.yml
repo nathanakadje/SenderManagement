@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres_db:
+    image: postgres:15-alpine
+    container_name: sender_postgres
+    environment:
+      POSTGRES_USER: nathan
+      POSTGRES_PASSWORD: Abdhr6??!34#ée&&
+      POSTGRES_DB: sender_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
