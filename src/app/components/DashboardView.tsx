@@ -1,6 +1,6 @@
 import {
   PieChart, Pie, Cell, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area,
 } from "recharts";
 import { useEffect, useState } from "react";
 import { Users, CheckCircle2, Clock, XCircle, TrendingUp, TrendingDown, ArrowRight } from "lucide-react";
@@ -176,7 +176,7 @@ export function DashboardView() {
         </Card>
 
         {/* Line */}
-        <Card className="p-5">
+        {/* <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <p style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9375rem" }}>Évolution mensuelle</p>
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: "var(--blue-muted)", color: "var(--primary)" }}>2025</span>
@@ -196,7 +196,40 @@ export function DashboardView() {
               <Line type="monotone" dataKey="count" stroke="#2563eb" strokeWidth={2.5} dot={false} activeDot={{ r: 5, fill: "#2563eb", stroke: "#fff", strokeWidth: 2 }} />
             </LineChart>
           </ResponsiveContainer>
-        </Card>
+        </Card> */}
+        <Card className="p-5">
+  <div className="flex items-center justify-between mb-4">
+    <p style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9375rem" }}>Évolution mensuelle</p>
+    <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: "var(--blue-muted)", color: "var(--primary)" }}>2026</span>
+  </div>
+  <ResponsiveContainer width="100%" height={210}>
+    {/* Remplacement par AreaChart pour pouvoir remplir le dessous de la courbe */}
+    <AreaChart data={dashboardData.lineData} margin={{ top: 10, right: 5, left: -20, bottom: 0 }}>
+      <defs>
+        {/* Amélioration du dégradé : plus doux et plus moderne */}
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.2} />
+          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.003} />
+        </linearGradient>
+      </defs>
+      <CartesianGrid strokeDasharray="4 4" stroke="rgba(15,23,42,0.04)" vertical={false} />
+      <XAxis dataKey="month" tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+      <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />
+      <Tooltip {...tooltipStyle} />
+      
+      {/* L'Area gère à la fois le contour (stroke) et le remplissage dégradé (fill) */}
+      <Area 
+        type="monotone" 
+        dataKey="count" 
+        stroke="#3b82f6" 
+        strokeWidth={2.5} 
+        fill="url(#lineGrad)" 
+        dot={false} 
+        activeDot={{ r: 5, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }} 
+      />
+    </AreaChart>
+  </ResponsiveContainer>
+</Card>
 
         {/* Bar - Countries */}
         <Card className="p-5">
@@ -222,12 +255,12 @@ export function DashboardView() {
             <span style={{ color: "var(--muted-foreground)", fontSize: "0.75rem" }}>Par volume de senders</span>
           </div>
           <div className="flex flex-col gap-4">
-            {operatorData.map(({ operator, count }, i) => {
+            {operatorData.slice(0, 5).map(({ operator, count }, i) => {
               const pct = Math.round((count / operatorData[0]?.count || 1) * 100);
               // const colors = ["#2563eb", "#0ea5e9", "#10b981", "#f59e0b", "#6366f1", "#64748b"];
               const colors = ["#2563eb", "#10b981", // vert émeraude
-  "#f59e0b", // ambre
-  "#8b5cf6", // violet
+  "#f59e0b", 
+  "#8b5cf6",
   "#ec4899", // rouge doux
   "#64748b", // turquoise
 ];
@@ -272,7 +305,7 @@ export function DashboardView() {
             </tr>
           </thead>
           <tbody>
-            {recentActivities.map((row, i) => (
+            {recentActivities.slice(0, 5).map((row, i) => (
               <tr
                 key={i}
                 className="transition-colors cursor-pointer"
