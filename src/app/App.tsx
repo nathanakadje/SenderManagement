@@ -29,9 +29,9 @@ export default function App() {
             <div className="h-full overflow-auto p-6" style={{ background: "var(--background)" }}>
               <div className="max-w-2xl mx-auto">
                 <div className="mb-6">
-                  <h2 style={{ color: "var(--foreground)", fontWeight: 800, fontSize: "1.25rem", letterSpacing: "-0.01em" }}>
+                  {/* <h2 style={{ color: "var(--foreground)", fontWeight: 800, fontSize: "1.25rem", letterSpacing: "-0.01em" }}>
                     Nouveau sender
-                  </h2>
+                  </h2> */}
                   <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem", marginTop: 4 }}>
                     Remplissez les informations ci-dessous. Le champ commentaire n'est activé que si le statut est «Rejeté».
                   </p>

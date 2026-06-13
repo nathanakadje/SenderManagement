@@ -238,7 +238,7 @@ export function DashboardView() {
             <button className="flex items-center gap-1 text-xs" style={{ color: "var(--primary)", fontWeight: 600 }}>Voir tout <ArrowRight size={11} /></button>
           </div>
           <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={countryData} barSize={22}>
+            <BarChart data={countryData.slice(0, 7)} barSize={22}>
               <CartesianGrid strokeDasharray="4 4" stroke="rgba(15,23,42,0.05)" vertical={false} />
               <XAxis dataKey="country" tick={{ fill: "#94a3b8", fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} axisLine={false} tickLine={false} />

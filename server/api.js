@@ -25,15 +25,96 @@ app.get('/api/senders', async (req, res) => {
 });
 
 //-- 2. Endpoint pour ajouter un nouveau Sender depuis votre formulaire
+// app.post('/api/senders', async (req, res) => {
+//   const { name, country, operator } = req.body;
+//   try {
+//     const result = await pool.query(
+//       'INSERT INTO senders (name, country, operator, status, date_created) VALUES ($1, $2, $3, $4, NOW()) RETURNING *;',
+//       [name, country, operator, 'Pending']
+//     );
+//     res.status(201).json(result.rows[0]);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// });
+// Dans server/api.js, corrigez l'endpoint POST /api/senders
+
+// app.post('/api/senders', async (req, res) => {
+//   const { name, country, operator, status, comment } = req.body;
+  
+//   // Validation des données
+//   if (!name || !country || !operator || !status) {
+//     return res.status(400).json({ error: 'Tous les champs obligatoires doivent être remplis' });
+//   }
+  
+//   try {
+//     // Récupérer le nom complet du pays à partir du code
+//     const countryResult = await pool.query(
+//       'SELECT name FROM countries WHERE code = $1 OR name = $1',
+//       [country]
+//     );
+    
+//     let countryName = country;
+//     if (countryResult.rows.length > 0) {
+//       countryName = countryResult.rows[0].name;
+//     }
+    
+//     const result = await pool.query(
+//       `INSERT INTO senders (name, country, operator, status, comment, date_created) 
+//        VALUES ($1, $2, $3, $4, $5, NOW()) 
+//        RETURNING *;`,
+//       [name, countryName, operator, status, comment || null]
+//     );
+    
+//     res.status(201).json({ 
+//       success: true, 
+//       message: 'Sender créé avec succès',
+//       data: result.rows[0] 
+//     });
+//   } catch (err) {
+//     console.error('Erreur lors de la création:', err);
+//     res.status(500).json({ error: err.message });
+//   }
+// });
 app.post('/api/senders', async (req, res) => {
-  const { name, country, operator } = req.body;
+  const { name, country, operator, status, comment } = req.body;
+  
+  // Validation des données obligatoires
+  if (!name || !country || !operator || !status) {
+    return res.status(400).json({ error: 'Tous les champs obligatoires doivent être remplis' });
+  }
+  
   try {
-    const result = await pool.query(
-      'INSERT INTO senders (name, country, operator, status, date_created) VALUES ($1, $2, $3, $4, NOW()) RETURNING *;',
-      [name, country, operator, 'Pending']
+    // Nettoyage de la chaîne du code pays pour éliminer les espaces et forcer les majuscules
+    const cleanCountryParam = country.trim().toUpperCase();
+
+    // Recherche blindée insensible à la casse sur le code ou le nom
+    const countryResult = await pool.query(
+      'SELECT name FROM countries WHERE UPPER(TRIM(code)) = $1 OR UPPER(TRIM(name)) = $1',
+      [cleanCountryParam]
     );
-    res.status(201).json(result.rows[0]);
+    
+    let countryName = country;
+    if (countryResult.rows.length > 0) {
+      countryName = countryResult.rows[0].name; // Récupère le nom complet (ex: Albania ou Côte d'Ivoire)
+    } else {
+      console.warn(`⚠️ Pays introuvable en base pour le paramètre: ${country}. Enregistrement de la valeur brute.`);
+    }
+    
+    const result = await pool.query(
+      `INSERT INTO senders (name, country, operator, status, comment, date_created) 
+       VALUES ($1, $2, $3, $4, $5, NOW()) 
+       RETURNING *;`,
+      [name, countryName, operator, status, comment || null]
+    );
+    
+    res.status(201).json({ 
+      success: true, 
+      message: 'Sender créé avec succès',
+      data: result.rows[0] 
+    });
   } catch (err) {
+    console.error('Erreur lors de la création:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -98,4 +179,43 @@ app.get('/api/countries', async (req, res) => {
   }
 });
 
+// 6. Mettre à jour les opérateurs d'un pays
+app.put('/api/countries/:code/operators', async (req, res) => {
+  const { code } = req.params;
+  const { operators } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE countries SET operators = $1 WHERE code = $2 RETURNING *;',
+      [operators, code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pays non trouvé' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 7. Ajouter un opérateur à un pays
+app.post('/api/countries/:code/operators', async (req, res) => {
+  const { code } = req.params;
+  const { operator } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE countries SET operators = array_append(operators, $1) WHERE code = $2 AND NOT ($1 = ANY(operators)) RETURNING *;',
+      [operator, code]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Pays non trouvé ou opérateur déjà existant' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.listen(3000, () => console.log('🚀 API connectée à Postgres sur http://localhost:3000'));
+
