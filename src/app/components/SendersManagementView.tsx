@@ -269,6 +269,30 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
         {/* Action buttons */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
+  onClick={exportToExcel}
+  className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm transition-all"
+  style={{
+    background: "#22c55e",
+    borderColor: "#22c55e",
+    fontWeight: 700,
+    color: "#ffffff"
+  }}
+  title="Export Excel"
+  onMouseEnter={(e) => {
+    const el = e.currentTarget;
+    el.style.background = "#16a34a";
+    el.style.borderColor = "#16a34a";
+  }}
+  onMouseLeave={(e) => {
+    const el = e.currentTarget;
+    el.style.background = "#22c55e";
+    el.style.borderColor = "#22c55e";
+  }}
+>
+  <FileSpreadsheet size={14} strokeWidth={2.5} />
+  Export .xlsx
+</button>
+          {/* <button
             onClick={exportToExcel}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm transition-all"
             style={{ background: "#fff", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
@@ -277,8 +301,32 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)"; }}
           >
             <FileSpreadsheet size={14} /> Export .xlsx
-          </button>
+          </button> */}
           <button
+  onClick={exportToCSV}
+  className="flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm transition-all"
+  style={{
+    background: "#8b5cf6",
+    borderColor: "#8b5cf6",
+    fontWeight: 700,
+    color: "#ffffff"
+  }}
+  title="Export CSV"
+  onMouseEnter={(e) => {
+    const el = e.currentTarget;
+    el.style.background = "#7c3aed";
+    el.style.borderColor = "#7c3aed";
+  }}
+  onMouseLeave={(e) => {
+    const el = e.currentTarget;
+    el.style.background = "#8b5cf6";
+    el.style.borderColor = "#8b5cf6";
+  }}
+>
+  <FileText size={14} strokeWidth={2.5}/>
+  Export .csv
+</button>
+          {/* <button
             onClick={exportToCSV}
             className="flex items-center gap-2 px-3.5 py-2 rounded-lg border text-sm transition-all"
             style={{ background: "#ffffff", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
@@ -287,7 +335,7 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
             onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)"; }}
           >
             <FileText size={14} /> Export .csv
-          </button>
+          </button> */}
           <button
             onClick={onCreateNew}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm transition-all"
@@ -307,7 +355,7 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
       >
         <table className="w-full">
           <thead>
-            <tr style={{ background: "var(--secondary)", borderBottom: "1px solid var(--border)" }}>
+            <tr style={{ background: "#d9e9fd", borderBottom: "1px solid var(--border)" }}>
               <th className="px-4 py-3 w-10">
                 <input 
                   type="checkbox" 
@@ -349,6 +397,46 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-1.5">
                     <button
+  onClick={() => onEdit(row)}
+  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+  style={{
+    backgroundColor: "#eff6ff",
+    color: "#3b82f6",
+    border: "1px solid #dbeafe"
+  }}
+  title="Modifier"
+  onMouseEnter={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#dbeafe";
+  }}
+  onMouseLeave={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#eff6ff";
+  }}
+>
+  <Edit2 size={12} />
+</button>
+<button
+  onClick={() => onDelete(row)}
+  className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+  style={{
+    backgroundColor: "#fff1f2",
+    color: "#e11d48",
+    border: "1px solid #ffe4e6"
+  }}
+  title="Supprimer"
+  onMouseEnter={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#ffe4e6";
+  }}
+  onMouseLeave={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#fff1f2";
+  }}
+>
+  <Trash2 size={12} />
+</button>
+                    {/* <button
                       onClick={() => onEdit(row)}
                       className="w-7 h-7 rounded-md flex items-center justify-center border transition-all"
                       style={{ background: "transparent", borderColor: "var(--border)", color: "var(--muted-foreground)" }}
@@ -367,7 +455,7 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
                       onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; (e.currentTarget as HTMLButtonElement).style.color = "var(--muted-foreground)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; }}
                     >
                       <Trash2 size={12} />
-                    </button>
+                    </button> */}
                   </div>
                 </td>
               </tr>

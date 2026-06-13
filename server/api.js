@@ -17,8 +17,8 @@ const pool = new pg.Pool({
 // 1. Endpoint pour récupérer TOUS les Senders (Management View)
 app.get('/api/senders', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM senders ORDER BY date_created DESC, id DESC;');
-    res.json(result.rows);
+    const result = await pool.query('SELECT * FROM senders WHERE deleted_at IS NULL OR deleted = FALSE ORDER BY date_created DESC, id DESC;');
+    res.json(result.rows); 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -216,6 +216,138 @@ app.post('/api/countries/:code/operators', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+  // 8. Mettre à jour un sender
+app.put('/api/senders/:id', async (req, res) => {
+  const { id } = req.params;
+  const { senderName, country, operator, status, comment } = req.body;
+  
+  console.log(`Mise à jour du sender ${id}:`, { senderName, country, operator, status, comment });
+  
+  try {
+    // Récupérer l'ancien sender pour l'historique
+    const oldSender = await pool.query('SELECT * FROM senders WHERE id = $1', [id]);
+    
+    if (oldSender.rows.length === 0) {
+      return res.status(404).json({ error: 'Sender non trouvé' });
+    }
+    
+    // Récupérer le nom complet du pays
+    let countryName = country;
+    const countryResult = await pool.query(
+      'SELECT name FROM countries WHERE code = $1 OR name = $1',
+      [country]
+    );
+    
+    if (countryResult.rows.length > 0) {
+      countryName = countryResult.rows[0].name;
+    }
+    
+    // Mettre à jour le sender
+    const result = await pool.query(
+      `UPDATE senders 
+       SET name = $1, country = $2, operator = $3, status = $4, comment = $5
+       WHERE id = $6 
+       RETURNING *`,
+      [senderName, countryName, operator, status, comment || null, id]
+    );
+    
+    // Ajouter à l'historique si le statut a changé
+    if (oldSender.rows[0].status !== status) {
+      await pool.query(
+        `INSERT INTO sender_history (sender_id, action, user_email, created_at) 
+         VALUES ($1, $2, $3, NOW())`,
+        [id, `Statut modifié : ${oldSender.rows[0].status} → ${status}`, 'admin@arolisender.io']
+      );
+    }
+    
+    // Ajouter une entrée pour la modification générale
+    await pool.query(
+      `INSERT INTO sender_history (sender_id, action, user_email, created_at) 
+       VALUES ($1, $2, $3, NOW())`,
+      [id, `Sender modifié : ${oldSender.rows[0].name} → ${senderName}`, 'admin@arolisender.io']
+    );
+    
+    console.log('Sender mis à jour avec succès:', result.rows[0]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Récupérer l'historique d'un sender
+app.get('/api/senders/:id/history', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `SELECT action, user_email as user, TO_CHAR(created_at, 'DD mon. YYYY – HH24:MI') as date 
+       FROM sender_history 
+       WHERE sender_id = $1 
+       ORDER BY created_at DESC 
+       LIMIT 20`,
+      [id]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erreur lors de la récupération de l\'historique:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Suppression douce d'un sender
+app.delete('/api/senders/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Vérifier si le sender existe
+    const sender = await pool.query('SELECT * FROM senders WHERE id = $1', [id]);
+    
+    if (sender.rows.length === 0) {
+      return res.status(404).json({ error: 'Sender non trouvé' });
+    }
+    
+    // Soft delete - ajouter une colonne deleted_at si elle n'existe pas
+    // Sinon, on peut simplement ajouter une entrée dans l'historique
+    await pool.query(
+      `INSERT INTO sender_history (sender_id, action, user_email, created_at) 
+       VALUES ($1, $2, $3, NOW())`,
+      [id, `Sender supprimé : ${sender.rows[0].name}`, 'admin@arolisender.io']
+    );
+    
+    // Option 1: Marquer comme supprimé (si vous avez une colonne deleted_at)
+    // await pool.query(`UPDATE senders SET deleted_at = NOW() WHERE id = $1`, [id]);
+    
+    // Option 2: Supprimer réellement (si vous voulez une vraie suppression)
+    await pool.query('DELETE FROM senders WHERE id = $1', [id]);
+    
+    console.log(`Sender ${id} supprimé avec succès`);
+    res.json({ success: true, message: 'Sender supprimé avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Créer la table d'historique si elle n'existe pas
+const createHistoryTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS sender_history (
+        id SERIAL PRIMARY KEY,
+        sender_id INTEGER REFERENCES senders(id) ON DELETE CASCADE,
+        action TEXT NOT NULL,
+        user_email VARCHAR(255),
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('Table sender_history vérifiée/créée');
+  } catch (err) {
+    console.error('Erreur lors de la création de sender_history:', err);
+  }
+};
+
+// Appeler la création de la table au démarrage
+createHistoryTable();
 
 app.listen(3000, () => console.log('🚀 API connectée à Postgres sur http://localhost:3000'));
 

@@ -754,6 +754,26 @@ export function SenderFormView({
           {submitting ? "Création en cours..." : submitLabel}
         </button>
         <button
+  onClick={handleReset}
+  className="px-6 py-2.5 rounded-lg transition-all"
+  style={{
+    backgroundColor: "#f3f4f6",
+    color: "#374151",
+    border: "1px solid #e5e7eb",
+    cursor: "pointer"
+  }}
+  onMouseEnter={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#e5e7eb";
+  }}
+  onMouseLeave={(e) => {
+    const el = e.currentTarget;
+    el.style.backgroundColor = "#f3f4f6";
+  }}
+>
+  Réinitialiser
+</button>
+        {/* <button
           onClick={handleReset}
           className="px-6 py-2.5 rounded-lg border transition-all"
           style={{ borderWidth: "1px", borderStyle: "solid", borderColor: "var(--border)", color: "var(--muted-foreground)", backgroundColor: "#fff", cursor: "pointer" }}
@@ -761,7 +781,7 @@ export function SenderFormView({
           onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent")}
         >
           Réinitialiser
-        </button>
+        </button> */}
       </div>
     </div>
   );
