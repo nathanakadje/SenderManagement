@@ -516,6 +516,224 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
+
+// ============ ENDPOINTS DE GESTION DES UTILISATEURS ============
+
+// Récupérer tous les utilisateurs
+app.get('/api/users', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT id, email, first_name, last_name, role, status, phone, address, department, created_at, last_login 
+      FROM users 
+      ORDER BY created_at DESC
+    `);
+    
+    // Transformer les données pour correspondre au format attendu par le frontend
+    const users = result.rows.map(user => ({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      status: user.status,
+      phone: user.phone,
+      address: user.address,
+      department: user.department,
+      createdAt: user.created_at,
+      lastLogin: user.last_login
+    }));
+    
+    res.json(users);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des utilisateurs:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Récupérer un utilisateur par ID
+app.get('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(`
+      SELECT id, email, first_name, last_name, role, status, phone, address, department, created_at, last_login 
+      FROM users 
+      WHERE id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    const user = result.rows[0];
+    res.json({
+      id: user.id,
+      email: user.email,
+      firstName: user.first_name,
+      lastName: user.last_name,
+      role: user.role,
+      status: user.status,
+      phone: user.phone,
+      address: user.address,
+      department: user.department,
+      createdAt: user.created_at,
+      lastLogin: user.last_login
+    });
+  } catch (err) {
+    console.error('Erreur lors de la récupération de l\'utilisateur:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Créer un nouvel utilisateur
+app.post('/api/users', async (req, res) => {
+  const { firstName, lastName, email, password, role, phone, department } = req.body;
+  
+  // Validation
+  if (!firstName || !lastName || !email || !password) {
+    return res.status(400).json({ error: 'Les champs requis sont manquants' });
+  }
+  
+  try {
+    // Vérifier si l'email existe déjà
+    const existingUser = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+    }
+    
+    // Hasher le mot de passe
+    const bcrypt = await import('bcryptjs');
+    const hashedPassword = await bcrypt.hash(password, 10);
+    
+    const result = await pool.query(`
+      INSERT INTO users (email, password_hash, first_name, last_name, role, status, phone, department, created_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      RETURNING id, email, first_name, last_name, role, status, phone, department
+    `, [email, hashedPassword, firstName, lastName, role || 'user', 'active', phone || null, department || null]);
+    
+    const newUser = result.rows[0];
+    res.status(201).json({
+      id: newUser.id,
+      email: newUser.email,
+      firstName: newUser.first_name,
+      lastName: newUser.last_name,
+      role: newUser.role,
+      status: newUser.status,
+      phone: newUser.phone,
+      department: newUser.department
+    });
+  } catch (err) {
+    console.error('Erreur lors de la création de l\'utilisateur:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mettre à jour un utilisateur
+app.put('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  const { firstName, lastName, email, phone, address, department, role, status } = req.body;
+  
+  try {
+    // Vérifier si l'utilisateur existe
+    const userExists = await pool.query('SELECT id FROM users WHERE id = $1', [id]);
+    if (userExists.rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    // Vérifier si l'email n'est pas déjà utilisé par un autre utilisateur
+    if (email) {
+      const emailExists = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, id]);
+      if (emailExists.rows.length > 0) {
+        return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+      }
+    }
+    
+    const result = await pool.query(`
+      UPDATE users 
+      SET 
+        first_name = COALESCE($1, first_name),
+        last_name = COALESCE($2, last_name),
+        email = COALESCE($3, email),
+        phone = COALESCE($4, phone),
+        address = COALESCE($5, address),
+        department = COALESCE($6, department),
+        role = COALESCE($7, role),
+        status = COALESCE($8, status),
+        updated_at = NOW()
+      WHERE id = $9
+      RETURNING id, email, first_name, last_name, role, status, phone, address, department
+    `, [firstName, lastName, email, phone, address, department, role, status, id]);
+    
+    const updatedUser = result.rows[0];
+    res.json({
+      id: updatedUser.id,
+      email: updatedUser.email,
+      firstName: updatedUser.first_name,
+      lastName: updatedUser.last_name,
+      role: updatedUser.role,
+      status: updatedUser.status,
+      phone: updatedUser.phone,
+      address: updatedUser.address,
+      department: updatedUser.department
+    });
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour de l\'utilisateur:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supprimer un utilisateur (soft delete)
+app.delete('/api/users/:id', async (req, res) => {
+  const { id } = req.params;
+  
+  try {
+    const result = await pool.query(`
+      UPDATE users 
+      SET status = 'inactive', deleted_at = NOW()
+      WHERE id = $1 
+      RETURNING id
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    res.json({ success: true, message: 'Utilisateur désactivé avec succès' });
+  } catch (err) {
+    console.error('Erreur lors de la suppression de l\'utilisateur:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Mettre à jour le statut d'un utilisateur (activer/désactiver)
+app.patch('/api/users/:id/status', async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+  
+  if (!['active', 'inactive', 'suspended'].includes(status)) {
+    return res.status(400).json({ error: 'Statut invalide' });
+  }
+  
+  try {
+    const result = await pool.query(`
+      UPDATE users 
+      SET status = $1, updated_at = NOW()
+      WHERE id = $2
+      RETURNING id, status
+    `, [status, id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+    
+    res.json({ success: true, status: result.rows[0].status });
+  } catch (err) {
+    console.error('Erreur lors de la mise à jour du statut:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 // Appeler la création de la table au démarrage
 createHistoryTable();
 

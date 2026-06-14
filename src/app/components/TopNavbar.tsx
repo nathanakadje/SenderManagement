@@ -217,13 +217,13 @@ export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: 
                 <User size={14} style={{ color: "var(--muted-foreground)" }} />
                 Mon profil
               </button>
-              <button
+              {/* <button
                 className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-slate-50"
                 style={{ color: "var(--foreground)", fontSize: "0.875rem" }}
               >
                 <Settings size={14} style={{ color: "var(--muted-foreground)" }} />
                 Préférences
-              </button>
+              </button> */}
               <div style={{ borderTop: "1px solid var(--border)" }}>
                 <button
                   onClick={handleLogout}

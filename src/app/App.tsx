@@ -90,10 +90,6 @@ export default function App() {
           activeView={activeView} 
           user={user}
           onLogout={handleLogout}
-          onNavigateToSettings={() => {
-    localStorage.setItem('settingsTab', 'profile');
-    setActiveView("settings");
-  }}
         />
 
         <main className="flex-1 overflow-hidden">
