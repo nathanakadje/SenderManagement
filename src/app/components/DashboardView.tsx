@@ -296,7 +296,7 @@ export function DashboardView() {
         </div>
         <table className="w-full">
           <thead>
-            <tr style={{ background: "var(--secondary)", borderBottom: "1px solid var(--border)" }}>
+            <tr style={{ background: "#d9e9fd", borderBottom: "1px solid var(--border)" }}>
               {["Sender Name", "Pays", "Opérateur", "Statut", "Date"].map((h) => (
                 <th key={h} className="px-5 py-3 text-left" style={{ color: "var(--muted-foreground)", fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.07em", textTransform: "uppercase" }}>
                   {h}

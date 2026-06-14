@@ -612,7 +612,7 @@ export function ModalsView() {
               <button
                 onClick={() => setShowBulkDeleteConfirm(true)}
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
-                style={{ background: "var(--rose-muted)", color: "var(--rose)" }}
+                style={{ background: "#f15454", color: "#fff", fontWeight: 700 }}
               >
                 <Trash size={14} /> Supprimer ({selectedIds.size})
               </button>

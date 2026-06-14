@@ -1,6 +1,11 @@
 import express from 'express';
 import pg from 'pg';
 import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
+
+// Clé secrète pour JWT (à mettre dans une variable d'environnement en production)
+const JWT_SECRET = 'votre_secret_jwt_tres_secure_2024';
 
 const app = express();
 app.use(cors());
@@ -345,6 +350,171 @@ const createHistoryTable = async () => {
     console.error('Erreur lors de la création de sender_history:', err);
   }
 };
+
+// ============ ENDPOINTS D'AUTHENTIFICATION ============
+
+// Endpoint de connexion
+app.post('/api/auth/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  console.log('Tentative de connexion:', { email });
+  
+  try {
+    // Rechercher l'utilisateur par email
+    const result = await pool.query(
+      'SELECT id, email, password_hash, first_name, last_name, role FROM users WHERE email = $1',
+      [email]
+    );
+    
+    if (result.rows.length === 0) {
+      console.log('Utilisateur non trouvé:', email);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Email ou mot de passe incorrect' 
+      });
+    }
+    
+    const user = result.rows[0];
+    console.log('Utilisateur trouvé:', { id: user.id, email: user.email });
+    
+    // Vérifier le mot de passe
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    
+    if (!isValidPassword) {
+      console.log('Mot de passe incorrect pour:', email);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Email ou mot de passe incorrect' 
+      });
+    }
+    
+    // Générer le token JWT
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    console.log('Connexion réussie pour:', email);
+    
+    res.json({
+      success: true,
+      token,
+      user: {
+        id: user.id,
+        email: user.email,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Erreur lors de la connexion:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur lors de la connexion' 
+    });
+  }
+});
+
+// Vérifier le token (optionnel)
+app.get('/api/auth/verify', async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+  
+  if (!token) {
+    return res.status(401).json({ valid: false });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    res.json({ valid: true, user: decoded });
+  } catch (err) {
+    res.status(401).json({ valid: false });
+  }
+});
+
+// Mot de passe oublié
+app.post('/api/auth/forgot-password', async (req, res) => {
+  const { email } = req.body;
+  
+  try {
+    const result = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    
+    if (result.rows.length === 0) {
+      // Pour des raisons de sécurité, on ne révèle pas que l'email n'existe pas
+      return res.json({ 
+        success: true, 
+        message: 'Si cet email existe, un lien de réinitialisation a été envoyé' 
+      });
+    }
+    
+    // Générer un token de réinitialisation
+    const resetToken = jwt.sign({ email }, JWT_SECRET, { expiresIn: '1h' });
+    
+    // Stocker le token en base
+    await pool.query(
+      'UPDATE users SET reset_token = $1, reset_token_expires = NOW() + INTERVAL \'1 hour\' WHERE email = $2',
+      [resetToken, email]
+    );
+    
+    console.log(`Lien de réinitialisation pour ${email}: http://localhost:5173/reset-password?token=${resetToken}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Si cet email existe, un lien de réinitialisation a été envoyé' 
+    });
+  } catch (err) {
+    console.error('Erreur:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur' 
+    });
+  }
+});
+
+// Réinitialisation du mot de passe
+app.post('/api/auth/reset-password', async (req, res) => {
+  const { token, newPassword } = req.body;
+  
+  try {
+    // Vérifier le token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const email = decoded.email;
+    
+    // Vérifier si le token existe en base
+    const result = await pool.query(
+      'SELECT id FROM users WHERE email = $1 AND reset_token = $2 AND reset_token_expires > NOW()',
+      [email, token]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Token invalide ou expiré' 
+      });
+    }
+    
+    // Hasher le nouveau mot de passe
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+    // Mettre à jour le mot de passe
+    await pool.query(
+      'UPDATE users SET password_hash = $1, reset_token = NULL, reset_token_expires = NULL WHERE email = $2',
+      [hashedPassword, email]
+    );
+    
+    res.json({ 
+      success: true, 
+      message: 'Mot de passe réinitialisé avec succès' 
+    });
+  } catch (err) {
+    console.error('Erreur:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur' 
+    });
+  }
+});
 
 // Appeler la création de la table au démarrage
 createHistoryTable();
