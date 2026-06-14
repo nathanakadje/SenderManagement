@@ -733,6 +733,164 @@ app.patch('/api/users/:id/status', async (req, res) => {
 });
 
 
+// ============ ENDPOINTS DE GESTION DES NOTIFICATIONS ============
+// Créer la table des notifications si elle n'existe pas
+const createNotificationsTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        title VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        type VARCHAR(50) DEFAULT 'info',
+        read BOOLEAN DEFAULT FALSE,
+        sender_id INTEGER REFERENCES senders(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `);
+    console.log('Table notifications vérifiée/créée');
+  } catch (err) {
+    console.error('Erreur lors de la création de la table notifications:', err);
+  }
+};
+
+// Appeler la création de la table au démarrage
+createNotificationsTable();
+
+// Récupérer le nombre de notifications non lues pour un utilisateur
+app.get('/api/notifications/unread/count', async (req, res) => {
+  try {
+    // Pour l'instant, on utilise un ID utilisateur fixe (à remplacer par l'ID de l'utilisateur connecté)
+    // Dans une vraie application, vous récupéreriez l'ID depuis le token JWT
+    const userId = req.user?.id || 1; // Temporaire: utiliser l'ID de l'utilisateur connecté
+    
+    const result = await pool.query(
+      'SELECT COUNT(*) as count FROM notifications WHERE user_id = $1 AND read = false',
+      [userId]
+    );
+    
+    res.json({ count: parseInt(result.rows[0].count) });
+  } catch (err) {
+    console.error('Erreur lors du comptage des notifications:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Récupérer toutes les notifications d'un utilisateur
+app.get('/api/notifications', async (req, res) => {
+  try {
+    const userId = req.user?.id || 1; // Temporaire
+    
+    const result = await pool.query(`
+      SELECT n.*, s.name as sender_name 
+      FROM notifications n
+      LEFT JOIN senders s ON n.sender_id = s.id
+      WHERE n.user_id = $1 
+      ORDER BY n.created_at DESC
+    `, [userId]);
+    
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Erreur lors de la récupération des notifications:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Marquer une notification comme lue
+app.put('/api/notifications/:id/read', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query(
+      'UPDATE notifications SET read = true WHERE id = $1',
+      [id]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur lors du marquage de la notification:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Marquer toutes les notifications comme lues
+app.put('/api/notifications/read-all', async (req, res) => {
+  try {
+    const userId = req.user?.id || 1;
+    await pool.query(
+      'UPDATE notifications SET read = true WHERE user_id = $1',
+      [userId]
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur lors du marquage de toutes les notifications:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supprimer une notification
+app.delete('/api/notifications/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    await pool.query('DELETE FROM notifications WHERE id = $1', [id]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur lors de la suppression de la notification:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Supprimer toutes les notifications d'un utilisateur
+app.delete('/api/notifications', async (req, res) => {
+  try {
+    const userId = req.user?.id || 1;
+    await pool.query('DELETE FROM notifications WHERE user_id = $1', [userId]);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Erreur lors de la suppression des notifications:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Créer une notification (utile pour les événements système)
+async function createNotification(userId, title, message, type = 'info', senderId = null) {
+  try {
+    const result = await pool.query(`
+      INSERT INTO notifications (user_id, title, message, type, sender_id, created_at)
+      VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING *
+    `, [userId, title, message, type, senderId]);
+    return result.rows[0];
+  } catch (err) {
+    console.error('Erreur lors de la création de la notification:', err);
+    return null;
+  }
+}
+
+// Exemple: Créer une notification lors de la création d'un sender
+// À ajouter dans votre endpoint POST /api/senders
+// Après avoir créé le sender, décommentez ce code:
+/*
+// Créer une notification pour l'administrateur
+await createNotification(
+  1, // ID de l'administrateur
+  'Nouveau sender créé',
+  `Le sender "${name}" a été créé avec succès`,
+  'success',
+  result.rows[0].id
+);
+*/
+
+// Exemple: Créer une notification lors du changement de statut
+// À ajouter dans votre endpoint PUT /api/senders/:id
+/*
+// Créer une notification pour l'utilisateur concerné
+await createNotification(
+  1, // ID de l'utilisateur
+  `Statut du sender modifié`,
+  `Le sender "${name}" est passé du statut "${oldStatus}" à "${newStatus}"`,
+  oldStatus !== newStatus ? 'warning' : 'info',
+  id
+);*/
 
 // Appeler la création de la table au démarrage
 createHistoryTable();

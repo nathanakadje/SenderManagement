@@ -20,6 +20,7 @@ interface TopNavbarProps {
   } | null;
   onLogout?: () => void;
   onNavigateToSettings?: () => void;
+  onNavigateToNotifications?: () => void;
 }
 
 export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: TopNavbarProps) {
@@ -162,7 +163,7 @@ export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: 
                 </div>
               ))}
               <div className="px-4 py-2.5 text-center" style={{ borderTop: "1px solid var(--border)" }}>
-                <button style={{ color: "var(--primary)", fontSize: "0.8125rem", fontWeight: 600 }}>
+                <button onClick={() => { setNotifOpen(false); onNavigateToNotifications?.(); }} style={{ color: "var(--primary)", fontSize: "0.8125rem", fontWeight: 600 }}>
                   Voir toutes les notifications
                 </button>
               </div>
