@@ -6,10 +6,12 @@ import { SenderFormView } from "./components/SenderFormView";
 import { SendersManagementView } from "./components/SendersManagementView";
 import { ModalsView } from "./components/ModalsView";
 import { LoginView } from "./components/LoginView";
+import { UserSettings } from "./components/UserSettings";
+
 
 /* MARKER-MAKE-KIT-INVOKED */
 
-type View = "dashboard" | "create" | "management" | "modals";
+type View = "dashboard" | "create" | "management" | "modals" | "settings";
 
 // Types pour l'authentification
 interface User {
@@ -80,7 +82,7 @@ export default function App() {
   return (
     <div className="flex h-screen w-screen overflow-hidden" style={{ background: "var(--background)" }}>
       {/* Blue sidebar */}
-      <Sidebar activeView={activeView} onNavigate={setActiveView} />
+      <Sidebar activeView={activeView} onNavigate={setActiveView} user={user} />
 
       {/* Main area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -88,6 +90,10 @@ export default function App() {
           activeView={activeView} 
           user={user}
           onLogout={handleLogout}
+          onNavigateToSettings={() => {
+    localStorage.setItem('settingsTab', 'profile');
+    setActiveView("settings");
+  }}
         />
 
         <main className="flex-1 overflow-hidden">
@@ -115,6 +121,14 @@ export default function App() {
           )}
 
           {activeView === "modals" && <ModalsView />}
+
+  {activeView === "settings" && (
+  <UserSettings 
+    currentUser={user} 
+    onUpdateUser={(updatedUser) => setUser(updatedUser)}
+  />
+)}
+
         </main>
       </div>
     </div>
