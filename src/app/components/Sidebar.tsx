@@ -17,7 +17,7 @@ const navItems = [
   { id: "dashboard" as View, label: "Dashboard", icon: LayoutDashboard },
   { id: "management" as View, label: "Senders", icon: Users },
   { id: "create" as View, label: "Create Sender", icon: PlusCircle },
-  { id: "modals" as View, label: "Actions & Modals", icon: Layers },
+  { id: "modals" as View, label: "Actions Sender", icon: Layers },
 ];
 
 export function Sidebar({ activeView, onNavigate, onLogout, user }: SidebarProps) {
