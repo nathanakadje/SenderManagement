@@ -386,7 +386,7 @@ export function SendersManagementView({ onEdit, onDelete, onCreateNew, refreshTr
                   <input type="checkbox" checked={selected.has(row.id)} onChange={() => toggleRow(row.id)} style={{ accentColor: "var(--primary)" }} />
                 </td>
                 <td className="px-4 py-3.5">
-                  <span style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.875rem", fontFamily: "monospace" }}>{row.name}</span>
+                  <span style={{ color: "var(--foreground)", fontSize: "0.875rem", fontFamily: "monospace" }}>{row.name}</span>
                 </td>
                 <td className="px-4 py-3.5" style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>{row.country}</td>
                 <td className="px-4 py-3.5" style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>{row.operator}</td>

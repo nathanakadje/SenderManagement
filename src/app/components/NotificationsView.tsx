@@ -6,6 +6,7 @@ import {
   Search, ChevronLeft, ChevronRight, Eye, EyeOff
 } from "lucide-react";
 import { Notification as NotificationToast, NotificationType } from "./Notification";
+import { io, Socket } from 'socket.io-client';
 
 interface Notification {
   id: number;
@@ -13,9 +14,9 @@ interface Notification {
   message: string;
   type: 'success' | 'error' | 'warning' | 'info';
   read: boolean;
-  createdAt: string;
-  senderName?: string;
-  senderId?: number;
+  created_at: string;
+  sender_name?: string;
+  sender_id?: number;
 }
 
 export function NotificationsView() {
@@ -29,6 +30,9 @@ export function NotificationsView() {
   const [showFilters, setShowFilters] = useState(false);
   const [typeOpen, setTypeOpen] = useState(false);
   const [notificationToast, setNotificationToast] = useState<{ type: NotificationType; message: string } | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
+
+  const API_URL = 'http://localhost:3000';
 
   // Types de notifications disponibles
   const notificationTypes = [
@@ -40,12 +44,99 @@ export function NotificationsView() {
 
   const showNotification = (type: NotificationType, message: string) => {
     setNotificationToast({ type, message });
-    setTimeout(() => setNotificationToast(null), 3000);
+    setTimeout(() => setNotificationToast(null), 5000);
   };
 
-  // Charger les notifications
+  // Charger les notifications depuis l'API
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch(`${API_URL}/api/notifications`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      setNotifications(data);
+      setFilteredNotifications(data);
+    } catch (err) {
+      console.error("Erreur lors du chargement des notifications:", err);
+      showNotification('error', "Impossible de charger les notifications");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Configuration WebSocket
+  useEffect(() => {
+    // Récupérer l'ID utilisateur
+    const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+    let userId = null;
+    
+    if (storedUser) {
+      try {
+        const user = JSON.parse(storedUser);
+        userId = user.id;
+      } catch (e) {
+        console.error('Erreur parsing user:', e);
+      }
+    }
+
+    // Initialiser la connexion WebSocket
+    const newSocket = io(API_URL, {
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+    
+    setSocket(newSocket);
+    
+    newSocket.on('connect', () => {
+      console.log('🔌 WebSocket connecté');
+      if (userId) {
+        newSocket.emit('join', userId);
+        console.log(`📱 Rejoint le channel user_${userId}`);
+      }
+    });
+    
+    newSocket.on('new_notification', (notification: Notification) => {
+      console.log('🔔 Nouvelle notification reçue:', notification);
+      
+      // Ajouter la nouvelle notification à la liste
+      setNotifications(prev => [notification, ...prev]);
+      setFilteredNotifications(prev => [notification, ...prev]);
+      
+      // Afficher un toast
+      showNotification(notification.type as NotificationType, notification.message);
+    });
+    
+    newSocket.on('disconnect', () => {
+      console.log('🔌 WebSocket déconnecté');
+    });
+    
+    newSocket.on('connect_error', (error) => {
+      console.error('❌ Erreur WebSocket:', error);
+    });
+    
+    return () => {
+      if (newSocket) {
+        newSocket.disconnect();
+      }
+    };
+  }, []);
+
+  // Charger les notifications au montage
   useEffect(() => {
     fetchNotifications();
+    
+    // Rafraîchir les notifications toutes les 30 secondes
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Appliquer les filtres
@@ -67,97 +158,62 @@ export function NotificationsView() {
     setCurrentPage(1);
   }, [notifications, searchTerm, typeFilter]);
 
-  const fetchNotifications = async () => {
-    try {
-      // Simuler le chargement depuis l'API
-      // À remplacer par votre vrai endpoint
-      const mockNotifications: Notification[] = [
-        {
-          id: 1,
-          title: "Sender validé",
-          message: "Le sender 'ORANGE_CI' a été validé avec succès",
-          type: "success",
-          read: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 2).toISOString(),
-          senderName: "ORANGE_CI",
-          senderId: 1
-        },
-        {
-          id: 2,
-          title: "Rejet nécessite une attention",
-          message: "Le sender 'MTN_GH' a été rejeté. Veuillez vérifier les motifs.",
-          type: "error",
-          read: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
-          senderName: "MTN_GH",
-          senderId: 2
-        },
-        {
-          id: 3,
-          title: "Import groupé terminé",
-          message: "14 senders ont été importés avec succès",
-          type: "info",
-          read: true,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(),
-        },
-        {
-          id: 4,
-          title: "Mise à jour du système",
-          message: "Nouvelle version disponible. Mettez à jour pour bénéficier des dernières fonctionnalités.",
-          type: "warning",
-          read: false,
-          createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-        },
-      ];
-      
-      setNotifications(mockNotifications);
-      setFilteredNotifications(mockNotifications);
-    } catch (err) {
-      console.error("Erreur lors du chargement des notifications:", err);
-      showNotification('error', "Impossible de charger les notifications");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Marquer une notification comme lue
   const markAsRead = async (id: number) => {
     try {
-      // Appel API pour marquer comme lue
-      // await fetch(`http://localhost:3000/api/notifications/${id}/read`, { method: 'PUT' });
+      const response = await fetch(`${API_URL}/api/notifications/${id}/read`, { 
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      setNotifications(prev => prev.map(n => 
-        n.id === id ? { ...n, read: true } : n
-      ));
-      showNotification('success', "Notification marquée comme lue");
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => 
+          n.id === id ? { ...n, read: true } : n
+        ));
+        showNotification('success', "Notification marquée comme lue");
+      }
     } catch (err) {
       console.error("Erreur:", err);
+      showNotification('error', "Erreur lors du marquage");
     }
   };
 
   // Marquer toutes les notifications comme lues
   const markAllAsRead = async () => {
     try {
-      // Appel API pour tout marquer
-      // await fetch('http://localhost:3000/api/notifications/read-all', { method: 'PUT' });
+      const response = await fetch(`${API_URL}/api/notifications/read-all`, { 
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      showNotification('success', "Toutes les notifications ont été marquées comme lues");
+      if (response.ok) {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        showNotification('success', "Toutes les notifications ont été marquées comme lues");
+      }
     } catch (err) {
       console.error("Erreur:", err);
+      showNotification('error', "Erreur lors du marquage");
     }
   };
 
   // Supprimer une notification
   const deleteNotification = async (id: number) => {
     try {
-      // Appel API pour supprimer
-      // await fetch(`http://localhost:3000/api/notifications/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${API_URL}/api/notifications/${id}`, { 
+        method: 'DELETE' 
+      });
       
-      setNotifications(prev => prev.filter(n => n.id !== id));
-      showNotification('success', "Notification supprimée");
+      if (response.ok) {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        showNotification('success', "Notification supprimée");
+      }
     } catch (err) {
       console.error("Erreur:", err);
+      showNotification('error', "Erreur lors de la suppression");
     }
   };
 
@@ -165,13 +221,17 @@ export function NotificationsView() {
   const deleteAllNotifications = async () => {
     if (window.confirm("Êtes-vous sûr de vouloir supprimer toutes les notifications ?")) {
       try {
-        // Appel API pour tout supprimer
-        // await fetch('http://localhost:3000/api/notifications', { method: 'DELETE' });
+        const response = await fetch(`${API_URL}/api/notifications`, { 
+          method: 'DELETE' 
+        });
         
-        setNotifications([]);
-        showNotification('success', "Toutes les notifications ont été supprimées");
+        if (response.ok) {
+          setNotifications([]);
+          showNotification('success', "Toutes les notifications ont été supprimées");
+        }
       } catch (err) {
         console.error("Erreur:", err);
+        showNotification('error', "Erreur lors de la suppression");
       }
     }
   };
@@ -295,7 +355,7 @@ export function NotificationsView() {
           <div className="flex flex-wrap gap-3 items-center justify-between">
             <div className="flex gap-2 flex-1 max-w-md">
               <div className="relative flex-1">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+                {/* <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} /> */}
                 <input
                   type="text"
                   placeholder="Rechercher une notification..."
@@ -389,7 +449,7 @@ export function NotificationsView() {
                         </h3>
                         <div className="flex items-center gap-2">
                           <span className="text-xs" style={{ color: "var(--muted-foreground)" }}>
-                            {formatDate(notification.createdAt)}
+                            {formatDate(notification.created_at)}
                           </span>
                           <button
                             onClick={(e) => {
@@ -406,9 +466,9 @@ export function NotificationsView() {
                       <p style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>
                         {notification.message}
                       </p>
-                      {notification.senderName && (
+                      {notification.sender_name && (
                         <p className="text-xs mt-2" style={{ color: "var(--primary)" }}>
-                          Sender: {notification.senderName}
+                          Sender: {notification.sender_name}
                         </p>
                       )}
                     </div>

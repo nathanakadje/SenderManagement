@@ -6,7 +6,7 @@ const titles: Record<string, { title: string; crumb: string }> = {
   dashboard: { title: "Dashboard", crumb: "Overview" },
   create: { title: "Create Sender", crumb: "Senders / New" },
   management: { title: "Senders Management", crumb: "Senders / All" },
-  modals: { title: "Actions & Modals", crumb: "Components / Overlays" },
+  modals: { title: "Actions Sender", crumb: "Components / Overlays" },
   settings: { title: "Paramètres", crumb: "System / Settings" },
 };
 
@@ -25,17 +25,17 @@ interface TopNavbarProps {
 
 export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: TopNavbarProps) {
   const [profileOpen, setProfileOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+  // const [notifOpen, setNotifOpen] = useState(false);
   const info = titles[activeView] ?? titles.dashboard;
 
   // Notifications dynamiques (peuvent être chargées depuis l'API)
-  const notifications = [
-    { msg: "Sender 'ORANGE_CI' was validated", time: "2 min ago", dot: "var(--emerald)", read: false },
-    { msg: "'MTN_GH' rejection requires your review", time: "1h ago", dot: "var(--rose)", read: false },
-    { msg: "Bulk import: 14 senders processed", time: "3h ago", dot: "var(--amber)", read: true },
-  ];
+  // const notifications = [
+  //   { msg: "Sender 'ORANGE_CI' was validated", time: "2 min ago", dot: "var(--emerald)", read: false },
+  //   { msg: "'MTN_GH' rejection requires your review", time: "1h ago", dot: "var(--rose)", read: false },
+  //   { msg: "Bulk import: 14 senders processed", time: "3h ago", dot: "var(--amber)", read: true },
+  // ];
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // const unreadCount = notifications.filter(n => !n.read).length;
 
   // Récupérer les infos utilisateur
   const getUserName = () => {
@@ -97,7 +97,7 @@ export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: 
       {/* Controls */}
       <div className="flex items-center gap-2.5">
         {/* Search */}
-        <div
+        {/* <div
           className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
           style={{ background: "var(--background)", border: "1px solid var(--border)", width: 230 }}
         >
@@ -113,10 +113,10 @@ export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: 
           >
             ⌘K
           </kbd>
-        </div>
+        </div> */}
 
         {/* Notifications */}
-        <div className="relative">
+        {/* <div className="relative">
           <button
             onClick={() => { setNotifOpen(!notifOpen); setProfileOpen(false); }}
             className="relative w-9 h-9 rounded-lg flex items-center justify-center"
@@ -169,7 +169,7 @@ export function TopNavbar({ activeView, user, onLogout, onNavigateToSettings }: 
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Divider */}
         <div className="w-px h-5" style={{ background: "var(--border)" }} />

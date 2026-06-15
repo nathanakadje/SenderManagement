@@ -807,7 +807,7 @@ export function UserSettings({ currentUser, onUpdateUser }: UserSettingsProps) {
             <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
               <div className="flex gap-2 flex-1 max-w-md">
                 <div className="relative flex-1">
-                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} />
+                  {/* <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: "var(--muted-foreground)" }} /> */}
                   <input
                     type="text"
                     placeholder="Rechercher un utilisateur..."

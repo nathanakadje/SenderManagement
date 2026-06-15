@@ -235,7 +235,7 @@ export function DashboardView() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <p style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9375rem" }}>Distribution des statuts</p>
-            <button className="flex items-center gap-1 text-xs" style={{ color: "var(--primary)", fontWeight: 600 }}>Détails <ArrowRight size={11} /></button>
+            {/* <button className="flex items-center gap-1 text-xs" style={{ color: "var(--primary)", fontWeight: 600 }}>Détails <ArrowRight size={11} /></button> */}
           </div>
           <ResponsiveContainer width="100%" height={210}>
             <PieChart>
@@ -285,7 +285,7 @@ export function DashboardView() {
         <Card className="p-5">
           <div className="flex items-center justify-between mb-4">
             <p style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9375rem" }}>Top Pays</p>
-            <button className="flex items-center gap-1 text-xs" style={{ color: "var(--primary)", fontWeight: 600 }}>Voir tout <ArrowRight size={11} /></button>
+            {/* <button className="flex items-center gap-1 text-xs" style={{ color: "var(--primary)", fontWeight: 600 }}>Voir tout <ArrowRight size={11} /></button> */}
           </div>
           <ResponsiveContainer width="100%" height={210}>
             <BarChart data={countryData.slice(0, 7)} barSize={22}>
@@ -334,9 +334,9 @@ export function DashboardView() {
           style={{ borderBottom: "1px solid var(--border)" }}
         >
           <p style={{ color: "var(--foreground)", fontWeight: 700, fontSize: "0.9375rem" }}>Activités récentes</p>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--accent)", color: "var(--primary)" }}>
+          {/* <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: "var(--accent)", color: "var(--primary)" }}>
             Voir tout <ArrowRight size={11} />
-          </button>
+          </button> */}
         </div>
         <table className="w-full">
           <thead>
@@ -358,7 +358,7 @@ export function DashboardView() {
                 onMouseLeave={(e) => ((e.currentTarget as HTMLTableRowElement).style.background = "transparent")}
               >
                 <td className="px-5 py-3.5">
-                  <span style={{ color: "var(--foreground)", fontWeight: 600, fontSize: "0.875rem", fontFamily: "monospace" }}>{row.name}</span>
+                  <span style={{ color: "var(--foreground)", fontSize: "0.875rem", fontFamily: "monospace" }}>{row.name}</span>
                 </td>
                 <td className="px-5 py-3.5" style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>{row.country}</td>
                 <td className="px-5 py-3.5" style={{ color: "var(--muted-foreground)", fontSize: "0.875rem" }}>{row.operator}</td>
