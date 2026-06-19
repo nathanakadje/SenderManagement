@@ -1,7 +1,8 @@
 version: '3.8'
 
 services:
-  postgres_db:
+  # Base de données PostgreSQL
+  postgres:
     image: postgres:15-alpine
     container_name: sender_postgres
     environment:
@@ -12,6 +13,75 @@ services:
       - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./countries.sql:/docker-entrypoint-initdb.d/02-countries.sql
+    networks:
+      - sender_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nathan -d sender_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sender_backend
+    environment:
+      NODE_ENV: production
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: nathan
+      DB_PASSWORD: Abdhr6??!34#ée&&
+      DB_NAME: sender_db
+      JWT_SECRET: votre_secret_jwt_tres_secure_2024
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sender_network
+    restart: unless-stopped
+
+  # Frontend (Serveur Nginx)
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: sender_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - sender_network
+    restart: unless-stopped
+
+networks:
+  sender_network:
+    driver: bridge
 
 volumes:
   postgres_data:
+# version: '3.8'
+
+# services:
+#   postgres_db:
+#     image: postgres:15-alpine
+#     container_name: sender_postgres
+#     environment:
+#       POSTGRES_USER: nathan
+#       POSTGRES_PASSWORD: Abdhr6??!34#ée&&
+#       POSTGRES_DB: sender_db
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+# volumes:
+#   postgres_data:
+#fANVIl_##@88537AzeTGn

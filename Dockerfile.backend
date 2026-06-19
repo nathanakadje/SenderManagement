@@ -1,0 +1,20 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# 1. Installer pnpm globalement
+RUN npm install -g pnpm
+
+# 2. Copier les fichiers de dépendances depuis la RACINE du projet
+COPY package.json pnpm-lock.yaml* pnpm-workspace.yaml* ./
+
+# 3. Installer toutes les dépendances nécessaires au projet
+RUN pnpm install
+
+# 4. Copier le dossier server (qui contient api.js) à l'intérieur du conteneur
+COPY server/ ./server/
+
+EXPOSE 3000
+
+# 5. Lancer l'API en pointant sur le bon sous-dossier
+CMD ["node", "server/api.js"]

@@ -22,12 +22,28 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
+// const pool = new pg.Pool({
+//   user: 'nathan',
+//   host: 'localhost',
+//   database: 'sender_db',
+//   password: 'Abdhr6??!34#ée&&',
+//   port: 5433,
+// });
 const pool = new pg.Pool({
-  user: 'nathan',
-  host: 'localhost',
-  database: 'sender_db',
-  password: 'Abdhr6??!34#ée&&',
-  port: 5433,
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 5432,
+  user: process.env.DB_USER || 'nathan',
+  password: process.env.DB_PASSWORD || 'Abdhr6??!34#ée&&',
+  database: process.env.DB_NAME || 'sender_db',
+});
+
+// Test de connexion immédiat au démarrage pour voir les erreurs dans les logs
+pool.connect((err, client, release) => {
+  if (err) {
+    return console.error('❌ Erreur de connexion initiale à PostgreSQL:', err.stack);
+  }
+  console.log('✅ Connexion à PostgreSQL réussie avec succès !');
+  release();
 });
 
 // ============ WEBSOCKET CONNEXION ============
